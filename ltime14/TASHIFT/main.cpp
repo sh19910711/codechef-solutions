@@ -1,10 +1,12 @@
 #include <iostream>
+#include <set>
 #include <vector>
 #include <string>
 #include <algorithm>
 #include <cstring>
 using namespace std;
 
+// ref: http://codeforces.com/blog/entry/4025
 #define REP(i, n) for (int i = 0; i < (int)(n); ++i)
 
 namespace SuffixArray
@@ -51,9 +53,56 @@ namespace SuffixArray
 typedef long long Int;
 typedef unsigned long long UInt;
 const Int N_MAX = 2000000 + 11;
-UInt A[N_MAX];
-UInt XA[N_MAX];
-UInt XB[N_MAX];
+const UInt d = 257;
+
+// ref: http://ronzii.wordpress.com/2012/02/26/rabin-karp-algorithm/
+int search(string pattern, string text)
+{
+    set<Int> ps;
+    int res = 0;
+    int M = pattern.length();
+    int N = text.length();
+    UInt h = 1;
+    //The value of h would be "pow(d, M-1)%prime"
+    for(int i=0; i<M-1; i++)
+    {
+        h *= d;
+    }
+    UInt p = 0,t = 0,i,j;
+    // Calculate the hash value of pattern and first window of text
+    for(i=0; i<M; i++)
+    {
+        p = d*p+pattern[i];
+        ps.insert(p);
+        t = d*t+text[i];
+    }
+    for(i=0; i<=(N-M); i++)
+    {
+        if ( p == t )
+        {
+            // Chaeck the hash values of current window of text and pattern
+            // If the hash values match then only check for characters on by one
+            for (j = 0; j < M; j++)
+            {
+                if (text[i+j] != pattern[j])
+                    break;
+            }
+            if (j == M)  // if p == t and pat[0...M-1] = txt[i, i+1, ...i+M-1]
+            {
+                // printf("Pattern found at index %d \n", i);
+                cout << text.substr(i) << endl;
+                res = max(res, M);
+            }
+        }
+        // Calulate hash value for next window of text: Remove leading digit,
+        // add trailing digit
+        if(i<(N-M))
+        {
+            t = (t - text[i]*h)*d + text[i+M];
+        }
+    }
+    return res;
+}
 
 int main() {
     int n;
@@ -78,23 +127,7 @@ int main() {
         lcs_len = max(lcs_len, SuffixArray::lcp[i]);
     }
     
-    for ( int i = 0; i < na; ++ i ) XA[i] = (a[i] - 'a' + 1);
-    for ( int i = 0; i < nb; ++ i ) XB[i] = (b[i] - 'a' + 1);
-    
-    fill(A, A + N_MAX, 0ULL);
-    UInt key = 0;
-    UInt base = 1;
-    UInt k = 27;
-    
-    for ( int i = 0; i < lcs_len; ++ i ) {
-        key *= k;
-        key += XA[i];
-    }
-    A[0] = 0;
-    for ( int i = 0; i < lcs_len; ++ i ) {
-        A[0] *= k;
-        A[0] += XB[i];
-    }
+    cout << search(a, b) << endl;
     
     return 0;
 }
