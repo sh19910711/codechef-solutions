@@ -6,7 +6,7 @@ def f(x, y)
   ub = 10**10
   100.times do
     mid = ( lb + ub ) / 2
-    if 2 * mid < x.abs && 2 * mid < y.abs
+    if 2 * mid < [x.abs, y.abs].max
       lb = mid
     else
       ub = mid
@@ -27,15 +27,16 @@ def h(x, y, sx, sy, tx, ty)
 end
 
 def g(k, tx, ty)
+  # puts "g: k = #{k}, t: (#{tx}, #{ty})"
   x = -2 * k
   y = -2 * k
   d = k * 4 + 1
   dx = [1, 0, -1, 0]
   dy = [0, 1, 0, -1]
-  1000.times do |t|
+  12.times do |t|
     nx = x + d * dx[t % 4]
     ny = y + d * dy[t % 4]
-    puts "#{k * 4 + t + 1}: (#{x}, #{y}) => (#{nx}, #{ny}), t(#{tx}, #{ty}), #{h(tx, ty, x, y, nx, ny)}"
+    # puts "g: #{k * 4 + t + 1}: (#{x}, #{y}) => (#{nx}, #{ny}), t(#{tx}, #{ty}), #{h(tx, ty, x, y, nx, ny)}"
     return true if h(tx, ty, x, y, nx, ny)
     x = nx
     y = ny
@@ -48,8 +49,21 @@ def solve(x, y)
   return g(f(x, y), x, y)
 end
 
-g(f(-200, -200), -200, -200)
-exit
+if $DEBUG
+  5.times do |x|
+    # puts "(#{-6 + x}, #{-6}): #{solve(-6 + x, -6)}"
+  end
+
+  s = 20
+  s.times {|dy|
+    s.times {|dx|
+      x = -(s/2) + dx
+      y = (s/2) - dy
+      print ( solve(x, y) ? 'o' : 'x' )
+    }
+    puts ""
+  }
+end
 
 gets.to_i.times { puts solve(*gets.split.map(&:to_i)) ? YES : NO }
 
@@ -75,6 +89,10 @@ if $DEBUG
       assert_equal solve(-3, 4), true
       assert_equal solve(-4, 4), true
       assert_equal solve(-1 * ( 10 ** 9 ), -1 * ( 10 ** 9 )), true
+    end
+
+    def test_a
+      assert_equal solve(-1, -2), true
     end
 
     def test_false
@@ -108,7 +126,7 @@ if $DEBUG
 
     def test_point
       assert_equal g(0, 1, 2), true
-      assert_equal g(0, -100, -100), true
+      assert_equal g(49, -100, -100), true
     end
   end
 
@@ -139,6 +157,10 @@ if $DEBUG
 
     def test_i
       assert_equal f(3, 4), 1
+    end
+
+    def test_j
+      assert_equal f(-100, -100), 49
     end
   end
 end
