@@ -4,6 +4,7 @@
 #include <set>
 #include <vector>
 #include <limits>
+#include <tuple>
 using namespace std;
 
 typedef long long Int;
@@ -25,11 +26,12 @@ void input() {
 }
 
 
-typedef pair<Int, Int> Node; // rem, c_id
+typedef tuple<Int, Int, Int> Node; // rem, last, c_id
 typedef set<Node, greater<Node>> Set;
 
 Int R[C_MAX]; // rem count
 bool D[C_MAX]; // using
+Int L[C_MAX]; // last order
 Set S;
 
 void init() {
@@ -39,26 +41,34 @@ void init() {
 }
 
 Int solve() {
+  for ( int i = 0; i < M; ++ i ) {
+    L[C[i]] = i;
+  }
+
   Int res = 0;
   for ( int i = 0; i < M; ++ i ) {
     const auto& c_id = C[i];
 
     if ( D[c_id] ) {
-      S.erase(Node(R[c_id], c_id));
+      S.erase(Node(R[c_id], L[c_id], c_id));
       R[c_id] --;
-      S.insert(Node(R[c_id], c_id));
+      S.insert(Node(R[c_id], L[c_id], c_id));
       continue;
     }
+
+    cout << "add: " << c_id << endl;
 
     res ++;
     D[c_id] = true;
     R[c_id] --;
     if ( S.size() >= N ) {
       const auto& rm = *S.begin();
-      D[rm.second] = false;
+      const auto& rm_c_id = get<2>(rm);
+      cout << "rm: " << rm_c_id << endl;
+      D[rm_c_id] = false;
       S.erase(rm);
     }
-    S.insert(Node(R[c_id], c_id));
+    S.insert(Node(R[c_id], L[c_id], c_id));
   }
   return res;
 }
