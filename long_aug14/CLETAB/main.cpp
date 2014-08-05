@@ -1,13 +1,12 @@
 #include <iostream>
 #include <algorithm>
 #include <queue>
+#include <set>
 #include <vector>
 #include <limits>
 using namespace std;
 
 typedef long long Int;
-typedef pair<Int, Int> Node; // rem, customer_id
-typedef priority_queue <Node, vector<Node>, greater<Node>> TableQueue;
 
 const Int N_MAX = 200 + 11;
 const Int M_MAX = 400 + 11;
@@ -26,32 +25,40 @@ void input() {
 }
 
 
-TableQueue Q;
+typedef pair<Int, Int> Node; // rem, c_id
+typedef set<Node, greater<Node>> Set;
+
 Int R[C_MAX]; // rem count
 bool D[C_MAX]; // using
+Set S;
 
 void init() {
-  Q = TableQueue();
   fill(R, R + C_MAX, 0);
   fill(D, D + C_MAX, false);
+  S = Set();
 }
 
 Int solve() {
   Int res = 0;
-  for ( int i = 0; i < M; ++ i ) R[C[i]] ++;
   for ( int i = 0; i < M; ++ i ) {
     const auto& c_id = C[i];
-    if ( D[c_id] ) continue;
+
+    if ( D[c_id] ) {
+      S.erase(Node(R[c_id], c_id));
+      R[c_id] --;
+      S.insert(Node(R[c_id], c_id));
+      continue;
+    }
+
+    res ++;
     D[c_id] = true;
     R[c_id] --;
-    res ++;
-    if ( Q.size() >= N ) {
-      auto rm = Q.top();
-      const auto& rm_c_id = rm.second;
-      Q.pop();
-      D[rm_c_id] = false;
+    if ( S.size() >= N ) {
+      const auto& rm = *S.begin();
+      D[rm.second] = false;
+      S.erase(rm);
     }
-    Q.push(Node(R[c_id], c_id));
+    S.insert(Node(R[c_id], c_id));
   }
   return res;
 }
