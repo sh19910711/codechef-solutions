@@ -12,6 +12,7 @@ typedef long long Int;
 const Int N_MAX = 200 + 11;
 const Int M_MAX = 400 + 11;
 const Int C_MAX = 400 + 11;
+const Int INF = numeric_limits<Int>::max();
 
 Int N;
 Int M;
@@ -25,51 +26,67 @@ void input() {
   for ( int i = 0; i < M; ++ i ) C[i] --;
 }
 
+typedef tuple <Int, Int, Int> Node; // rem, next_order, c_id
+const Int NODE_C_ID = 2;
+typedef set <Node, less<Node>> NodeSet;
 
-typedef tuple<Int, Int, Int> Node; // rem, last, c_id
-typedef set<Node, greater<Node>> Set;
-
-Int R[C_MAX]; // rem count
+Int R[C_MAX]; // rem
+Int O[C_MAX][M_MAX];
+Int OC[C_MAX];
+Int OI[C_MAX];
 bool D[C_MAX]; // using
-Int L[C_MAX]; // last order
-Set S;
+NodeSet S;
 
 void init() {
   fill(R, R + C_MAX, 0);
+  fill(OC, OC + C_MAX, 0);
+  fill(OI, OI + C_MAX, 0);
   fill(D, D + C_MAX, false);
-  S = Set();
+  S = NodeSet();
+}
+
+Node get_node( const Int& a, const Int& b, const Int& c ) {
+  return Node(a, b, c);
 }
 
 Int solve() {
-  for ( int i = 0; i < M; ++ i ) {
-    L[C[i]] = i;
-  }
-
   Int res = 0;
   for ( int i = 0; i < M; ++ i ) {
     const auto& c_id = C[i];
+    R[c_id] ++;
+    O[c_id][OC[c_id] ++] = i;
+  }
+  for ( int i = 0; i < M; ++ i ) {
+    const auto& c_id = C[i];
+    auto& rem = R[c_id];
+    const auto& orders = O[c_id];
+    auto& order_index = OI[c_id];
+    const auto& order_num = OC[c_id];
 
     if ( D[c_id] ) {
-      S.erase(Node(R[c_id], L[c_id], c_id));
-      R[c_id] --;
-      S.insert(Node(R[c_id], L[c_id], c_id));
+      S.erase(get_node(rem, orders[order_index - 1], c_id));
+      rem --;
+      S.insert(get_node(rem, orders[order_index ++], c_id));
       continue;
     }
 
-    cout << "add: " << c_id << endl;
-
-    res ++;
-    D[c_id] = true;
-    R[c_id] --;
     if ( S.size() >= N ) {
       const auto& rm = *S.begin();
-      const auto& rm_c_id = get<2>(rm);
-      cout << "rm: " << rm_c_id << endl;
+      const auto& rm_c_id = get<NODE_C_ID>(rm);
       D[rm_c_id] = false;
       S.erase(rm);
     }
-    S.insert(Node(R[c_id], L[c_id], c_id));
+
+    rem --;
+    if ( order_index + 1 >= order_num ) {
+      S.insert(get_node(rem, M_MAX, c_id));
+    } else {
+      S.insert(get_node(rem, orders[order_index ++], c_id));
+    }
+    D[c_id] = true;
+    res ++;
   }
+
   return res;
 }
 
