@@ -12,7 +12,7 @@ typedef long long Int;
 const Int N_MAX = 200 + 11;
 const Int M_MAX = 400 + 11;
 const Int C_MAX = 400 + 11;
-const Int INF = numeric_limits<Int>::max();
+const Int MEMO_NONE = -1;
 
 Int N;
 Int M;
@@ -26,67 +26,60 @@ void input() {
   for ( int i = 0; i < M; ++ i ) C[i] --;
 }
 
-typedef tuple <Int, Int, Int> Node; // rem, next_order, c_id
-const Int NODE_C_ID = 2;
-typedef set <Node, less<Node>> NodeSet;
-
-Int R[C_MAX]; // rem
-Int O[C_MAX][M_MAX];
-Int OC[C_MAX];
-Int OI[C_MAX];
-bool D[C_MAX]; // using
-NodeSet S;
+Int orders[C_MAX][M_MAX]; // orders[c_id][i] := c_id's i-th order pos in C
+Int order_num[C_MAX];
+Int pos_to_order[C_MAX][M_MAX];
+bool keeped[M_MAX];
+Int memo[M_MAX][M_MAX];
 
 void init() {
-  fill(R, R + C_MAX, 0);
-  fill(OC, OC + C_MAX, 0);
-  fill(OI, OI + C_MAX, 0);
-  fill(D, D + C_MAX, false);
-  S = NodeSet();
+  for ( int i = 0; i < M_MAX; ++ i ) {
+    fill(memo[i], memo[i] + M_MAX, MEMO_NONE);
+  }
+  fill(order_num, order_num + C_MAX, 0);
+  fill(keeped, keeped + M_MAX, false);
 }
 
-Node get_node( const Int& a, const Int& b, const Int& c ) {
-  return Node(a, b, c);
+Int rec( const Int& l, const Int& r ) {
+  auto& res = memo[l][r];
+  if ( res != MEMO_NONE ) return res;
+  res = 0;
+  bool flag = false;
+  for ( Int i = l + 1; i < r; ++ i ) {
+    const auto& c_id = C[i];
+    const auto& order_ind = pos_to_order[c_id][i];
+    if ( order_ind + 1 < order_num[c_id] ) {
+      flag = true;
+      const auto& ret = rec(i, min(r, orders[c_id][order_ind + 1]));
+      res += ret;
+    }
+  }
+  if ( ! flag ) return 1;
+  return res;
 }
 
 Int solve() {
+  for ( int i = 0; i < M; ++ i ) {
+    const auto& c_id = C[i];
+    orders[c_id][order_num[c_id]] = i;
+    pos_to_order[c_id][i] = order_num[c_id];
+    order_num[c_id] ++;
+  }
   Int res = 0;
   for ( int i = 0; i < M; ++ i ) {
     const auto& c_id = C[i];
-    R[c_id] ++;
-    O[c_id][OC[c_id] ++] = i;
+    const auto& order_ind = pos_to_order[c_id][i];
+    if ( order_ind + 1 < order_num[c_id] ) {
+      const auto& next_order_pos = orders[c_id][order_ind + 1];
+      const auto& ret = rec(i, next_order_pos);
+      if ( ret < N ) {
+        if ( ! keeped[i] ) res ++;
+        keeped[next_order_pos] = true;
+        continue;
+      }
+    }
+    if ( ! keeped[i] ) res ++;
   }
-  for ( int i = 0; i < M; ++ i ) {
-    const auto& c_id = C[i];
-    auto& rem = R[c_id];
-    const auto& orders = O[c_id];
-    auto& order_index = OI[c_id];
-    const auto& order_num = OC[c_id];
-
-    if ( D[c_id] ) {
-      S.erase(get_node(rem, orders[order_index - 1], c_id));
-      rem --;
-      S.insert(get_node(rem, orders[order_index ++], c_id));
-      continue;
-    }
-
-    if ( S.size() >= N ) {
-      const auto& rm = *S.begin();
-      const auto& rm_c_id = get<NODE_C_ID>(rm);
-      D[rm_c_id] = false;
-      S.erase(rm);
-    }
-
-    rem --;
-    if ( order_index + 1 >= order_num ) {
-      S.insert(get_node(rem, M_MAX, c_id));
-    } else {
-      S.insert(get_node(rem, orders[order_index ++], c_id));
-    }
-    D[c_id] = true;
-    res ++;
-  }
-
   return res;
 }
 
