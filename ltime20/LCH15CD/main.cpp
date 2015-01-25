@@ -13,6 +13,7 @@
 #include <limits>
 #include <cstdio>
 #include <cmath>
+#include <cassert>
 
 #if __cplusplus >= 201103L
 #include <memory>
@@ -77,31 +78,37 @@ namespace solution {
 
     Solution() {}
 
-    typedef array<Int, 11> IntArray;
+    const Int INF = numeric_limits<Int>::max();
+    typedef vector<Int> IntVector;
+    typedef vector<Int> Points;
+    typedef vector<Points> Layer;
 
     Int N;
     Int D;
-    IntArray P;
-    IntArray A;
+    IntVector M;
 
     bool solve() {
       this->N = in.N;
       this->D = in.D;
-      P[0] = 1;
-      for ( int i = 1; i < 11; ++ i ) {
-        P[i] = P[i] * D;
-      }
       out.res = find_min();
       return true;
     }
 
-    Int find_min() {
+    Int to_hash( const IntVector& p ) {
+      Int res = 0;
+      Int base = 1;
+      for ( auto it = p.begin(); it != p.end(); it ++ ) {
+        res += (*it) * base;
+        base *= D;
+      }
+      return res;
     }
 
-    typedef vector<Int> IntVector;
-    typedef pair<Int, IntVector> Node;
-    typedef priority_queue<Node, vector<Node>, greater<Node>> Queue;
-    typedef map<IntVector, Int> Map;
+    Int find_min() {
+      M = IntVector(1 << 17, INF);
+      IntVector s(N, D - 1);
+      return rec(s);
+    }
 
     Int xor_sum( const IntVector& v ) {
       Int res = 0;
@@ -123,56 +130,26 @@ namespace solution {
       return xor_sum(v) * add_sum(v);
     }
 
-    Int find_min_1( const Int& N, const Int& D ) {
-      Int res = numeric_limits<Int>::max();
-      Queue q;
-      const IntVector spos(N, 0);
-      const IntVector gpos(N, D - 1);
-      Node s(0, spos);
-      Map m;
-      const Int dpos[2] = {-1, 1};
-
-      m[spos] = 0;
-      q.push(s);
-
-      while ( ! q.empty() ) {
-        const Node& cur = q.top();
-        q.pop();
-
-        const Int& cost = cur.first;
-        IntVector pos = cur.second;
-
-        if ( cost >= res ) continue;
-
-        if ( pos == gpos ) {
-          if ( cost < res ) {
-            res = cost;
-          }
-          continue;
-        }
-
-        for ( int i = 0; i < N; ++ i ) {
-          for ( int j = 0; j < 2; ++ j ) {
-            pos[i] += dpos[j];
-            if ( pos[i] >= 0 && pos[i] < D ) {
-              Int ncost = cost + calc_cost(pos);
-              if ( m.count(pos) ) {
-                auto& memo = m[pos];
-                if ( ncost < memo ) {
-                  memo = ncost;
-                  q.emplace(ncost, pos);
-                }
-              } else {
-                m[pos] = ncost;
-                q.emplace(ncost, pos);
-              }
-            }
-            pos[i] -= dpos[j];
-          }
-        }
+    Int rec(IntVector& pos) {
+      const Int& hash = to_hash(pos);
+      Int& memo = M[hash];
+      if ( memo != INF ) return memo;
+      if ( hash == 0 ) {
+        memo = 0;
+        return 0;
       }
 
-      return res;
+      memo = calc_cost(pos);
+      Int best = INF;
+      for ( auto& p : pos ) {
+        p --;
+        if ( p >= 0 ) {
+          best = min(best, rec(pos));
+        }
+        p ++;
+      }
+      memo += best;
+      return memo;
     }
 
     /* action methods {{{ */
